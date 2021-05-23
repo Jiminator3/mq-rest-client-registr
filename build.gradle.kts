@@ -23,11 +23,16 @@ dependencies {
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-	implementation("org.liquibase:liquibase-core")
 	implementation("org.springframework.kafka:spring-kafka")
+	implementation("io.github.microutils:kotlin-logging-jvm:2.0.6")
+	implementation("org.hibernate:hibernate-core:5.4.31.Final") //:5.2.15.Final
+	implementation("javax.xml.bind:jaxb-api") //:2.3.0
 	runtimeOnly("org.postgresql:postgresql")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("com.h2database:h2") //:1.4.196
+	testImplementation("org.hibernate:hibernate-testing")
 	testImplementation("org.springframework.kafka:spring-kafka-test")
+	testImplementation("io.zonky.test:embedded-database-spring-test:2.0.0") //:2.0.0-beta1
 }
 
 tasks.withType<KotlinCompile> {
