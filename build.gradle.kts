@@ -29,7 +29,6 @@ dependencies {
 	implementation("javax.xml.bind:jaxb-api") //:2.3.0
 	runtimeOnly("org.postgresql:postgresql")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
-	testImplementation("com.h2database:h2") //:1.4.196
 	testImplementation("org.hibernate:hibernate-testing")
 	testImplementation("org.springframework.kafka:spring-kafka-test")
 	testImplementation("io.zonky.test:embedded-database-spring-test:2.0.0") //:2.0.0-beta1
