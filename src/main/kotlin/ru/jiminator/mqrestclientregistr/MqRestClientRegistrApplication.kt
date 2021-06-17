@@ -1,5 +1,8 @@
 package ru.jiminator.mqrestclientregistr
 
+import au.com.console.kassava.kotlinEquals
+import au.com.console.kassava.kotlinHashCode
+import au.com.console.kassava.kotlinToString
 import mu.KotlinLogging
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
@@ -21,14 +24,19 @@ fun main(args: Array<String>) {
 
 interface ClientRepository : CrudRepository<Client, Long>
 
-
 @Entity
-data class Client(
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Long? = null,
-    @Column(nullable = false) val factAddress: String,
-    @Column(nullable = false) val regAddress: String,
-    @Column(nullable = false) val phone: Long
-)
+class Client(@Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Long? = null, val factAddress: String, val regAddress: String, val phone: Long) {
+
+    companion object {
+        private val properties = arrayOf(Client::factAddress, Client::regAddress, Client::phone)
+    }
+
+    override fun equals(other: Any?) = kotlinEquals(other = other, properties = properties)
+
+    override fun toString() = kotlinToString(properties = properties)
+
+    override fun hashCode() = kotlinHashCode(properties = properties)
+}
 
 // Получаем с Kafka JSON сообщение.
 @Component
