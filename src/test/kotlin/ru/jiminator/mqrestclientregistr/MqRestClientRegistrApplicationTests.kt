@@ -35,12 +35,12 @@ class KafkaClientMessageTest(
     @Test
     fun `01 - Test client from message queue and store in database`() {
 
-        val producerProps = KafkaTestUtils.producerProps(embeddedKafkaBroker.first()).apply {
-            put(
-                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-                "org.springframework.kafka.support.serializer.JsonSerializer"
-            )
-        }
+//        val producerProps = KafkaTestUtils.producerProps(embeddedKafkaBroker.first()).apply {
+//            put(
+//                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+//                "org.springframework.kafka.support.serializer.JsonSerializer"
+//            )
+//        }
         assertEquals(1, employeeRepository.findAll().size)
  //        val producer = KafkaTemplate(DefaultKafkaProducerFactory<String, Client>(producerProps))
 //        val client = Client(factAddress = "5 mkr", regAddress = "6mkr", phone = 89889778864)
