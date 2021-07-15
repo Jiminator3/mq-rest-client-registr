@@ -35,6 +35,7 @@ dependencies {
 	implementation("com.github.docker-java:docker-java-transport-zerodep:3.2.8")
 	runtimeOnly("org.postgresql:postgresql")
 	testImplementation("io.rest-assured:rest-assured:4.4.0")
+	testImplementation("io.rest-assured:json-schema-validator:4.1.2")
 	testImplementation("io.ebean:ebean-test:12.3.2")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.hibernate:hibernate-testing")

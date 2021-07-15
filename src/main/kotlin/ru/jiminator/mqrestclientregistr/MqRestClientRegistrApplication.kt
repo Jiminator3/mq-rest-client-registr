@@ -56,6 +56,7 @@ class ClientConsumer(private val clients: ClientRepository) {
 // REST API позволяет получить данные по этим объектам.
 @RestController
 class ClientResource(private val clients: ClientRepository) {
+
     @GetMapping("/client")
     fun index(): List<Client> {
         return clients.findAll().toList()

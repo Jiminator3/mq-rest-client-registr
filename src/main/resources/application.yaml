@@ -24,7 +24,6 @@ spring:
   #      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
   datasource:
-    platform: postgres
     url: jdbc:postgresql://localhost:5432/mrcr_db
     username: admin
     password: admin
@@ -32,3 +31,7 @@ spring:
 
   test:
     topic: external.in.client-info
+
+  sql:
+    init:
+      platform: postgres

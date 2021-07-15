@@ -1,48 +1,50 @@
 package ru.jiminator.mqrestclientregistr
 
-import io.zonky.test.db.AutoConfigureEmbeddedDatabase
-import org.junit.jupiter.api.BeforeAll
+import io.restassured.RestAssured.get
+import io.restassured.RestAssured.given
+import io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath
+import org.hamcrest.CoreMatchers.`is`
+import org.hamcrest.CoreMatchers.hasItem
 import org.junit.jupiter.api.Test
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.jdbc.Sql
+import org.springframework.test.context.jdbc.SqlConfig
+import org.springframework.test.context.jdbc.SqlGroup
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 
-@AutoConfigureEmbeddedDatabase(type = AutoConfigureEmbeddedDatabase.DatabaseType.POSTGRES)
 @SpringBootTest(classes = [MqRestClientRegistrApplication::class])
-@AutoConfigureTestDatabase
-@AutoConfigureMockMvc
-class WebMvcClientResourcesTest(
-    @Autowired val mockMvc: MockMvc
-) {
-    companion object {
-        @JvmStatic
-        @BeforeAll
-        fun databasePopulation(@Autowired clientRepository: ClientRepository) {
-            val client = Client(factAddress = "5mkr", regAddress = "6mkr", phone = 89889778864)
-            clientRepository.save(client)
-        }
-    }
+@SqlGroup(
+    Sql(
+        "/import-clients.sql",
+        config = SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED)
+    ),
+    Sql(
+        "/delete-import-clients.sql",
+        config = SqlConfig(transactionMode = SqlConfig.TransactionMode.ISOLATED),
+        executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
+    )
+)
+class WebMvcClientResourcesTest {
 
     @Test
     fun `01 - Test index route of client resource`() {
-        mockMvc.get("/client").andExpect { status { isOk() } }
-            .andExpect {
-                content {
-                    json("[{\"id\":1,\"factAddress\":\"5mkr\",\"regAddress\":\"6mkr\",\"phone\":89889778864}]")
-                }
-            }
+        get("/client")
+            .then().assertThat()
+            .statusCode(200)
+            .body(matchesJsonSchemaInClasspath("getSchema.json"))
     }
 
     @Test
     fun `02 - Test find route of client resource by id`() {
-        mockMvc.get("/client/1").andExpect { status { isOk() } }
-            .andExpect {
-                content {
-                    json("{\"id\":1,\"factAddress\":\"5mkr\",\"regAddress\":\"6mkr\",\"phone\":89889778864}")
-                }
-            }
+        get("/client/2")
+            .then().assertThat()
+            .statusCode(200)
+            .body(matchesJsonSchemaInClasspath("getSchema1.json"))
+            .body("id", `is` (2))
+            .body("factAddress", `is` ("45mkr"))
+            .body("regAddress", `is` ("44mkr"))
+            .body("phone", `is` (89889778865))
     }
 }

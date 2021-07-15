@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "array",
+  "items": [
+    {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "fact_address": {
+          "type": "string"
+        },
+        "reg_address": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "factAddress",
+        "regAddress",
+        "phone"
+      ]
+    }
+  ]
+}
