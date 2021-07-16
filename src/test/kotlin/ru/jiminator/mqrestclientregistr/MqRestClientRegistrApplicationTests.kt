@@ -2,21 +2,19 @@ package ru.jiminator.mqrestclientregistr
 
 
 import io.restassured.RestAssured
-import org.apache.kafka.clients.producer.ProducerConfig
+import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.hamcrest.CoreMatchers.`is`
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.kafka.core.DefaultKafkaProducerFactory
-import org.springframework.kafka.core.KafkaOperations
-import org.springframework.kafka.core.KafkaTemplate
-import org.springframework.kafka.test.EmbeddedKafkaBroker
-import org.springframework.kafka.test.utils.KafkaTestUtils
+import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlConfig
 import org.springframework.test.context.jdbc.SqlGroup
-import ru.jiminator.mqrestclientregistr.boot.repository.EmployeeRepository
-import java.util.function.Consumer
+import ru.jiminator.mqrestclientregistr.kafka.KafkaProducerConfig
+import kotlin.time.measureTimedValue
 
 
 @SpringBootTest(classes = [MqRestClientRegistrApplication::class])
@@ -27,26 +25,33 @@ import java.util.function.Consumer
         executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD
     )
 )
-class KafkaClientMessageTest() {
-    @Autowired
-    val embeddedKafkaBroker: List<EmbeddedKafkaBroker>? = null
+@DirtiesContext
+class KafkaClientMessageTest {
 
+    val consume: ConsumerRecord<String, Client>? = null
+
+//    @Value("{external.in.client-info}")
     private val clientTopic = "external.in.client-info"
 
+    @KafkaListener(topics = ["external.in.client-info"])
     @Test
     fun `01 - Test client from message queue and store in database`() {
-
-        val producerProps = KafkaTestUtils.producerProps(embeddedKafkaBroker!!.first()).apply {
-            put(
-                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-                "org.springframework.kafka.support.serializer.JsonSerializer"
-            )
-        }
-        val producer = KafkaTemplate(DefaultKafkaProducerFactory<String, Client>(producerProps))
-        val client = Client(factAddress = "5 mkr", regAddress = "6mkr", phone = 89889778864)
+//        val producerProps = KafkaTestUtils.producerProps(embeddedKafkaBroker!!.first()).apply {
+//            put(
+//                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+//                "org.springframework.kafka.support.serializer.JsonSerializer"
+//            )
+//        }
+        val producer = KafkaProducerConfig().kafkaTemplate()
+        val client = Client(10,"5 mkr","6mkr",89889778864)
         producer.send(clientTopic, client).completable().join()
-//        producer.execute(KafkaOperations.ProducerCallback { Client.Companion.equals(1) })
         RestAssured.get("/client").then()
-            .body("factAddress", `is`("5 mkr")).body("regAddress", `is`("6mkr")).body("phone", `is`(89889778864))
+            .statusCode(200)
+//        println(consume!!.value())
+//        val body = record.value()
+//        rep.save(record.value())
+//        producer.execute(KafkaOperations.ProducerCallback { Client.Companion.equals(1) })
+//        RestAssured.get("/client").then()
+//            .body("factAddress", `is`("5 mkr")).body("regAddress", `is`("6mkr")).body("phone", `is`(89889778864))
     }
 }
