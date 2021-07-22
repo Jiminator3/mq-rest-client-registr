@@ -1,7 +1,7 @@
 package ru.jiminator.mqrestclientregistr.kafka
 
 import org.apache.kafka.clients.producer.ProducerConfig
-import org.apache.kafka.common.serialization.LongSerializer
+import org.apache.kafka.common.serialization.StringSerializer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.core.DefaultKafkaProducerFactory
@@ -13,20 +13,16 @@ import ru.jiminator.mqrestclientregistr.Client
 
 @Configuration
 class KafkaProducerConfig {
-    private val kafkaServer = "localhost:9092"
-
-    @Bean
-    fun producerConfigs(): Map<String, Any> {
-        val props: MutableMap<String, Any> = HashMap()
-        props[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = kafkaServer
-        props[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = LongSerializer::class.java
-        props[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = JsonSerializer::class.java
-        return props
-    }
+//    private val kafkaServer = "localhost:9092"
 
     @Bean
     fun producerFactory(): ProducerFactory<String, Client> {
-        return DefaultKafkaProducerFactory(producerConfigs())
+        val config = HashMap<String, Any>()
+        config[ProducerConfig.BOOTSTRAP_SERVERS_CONFIG] = "127.0.0.1:9092"
+        config[ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG] = StringSerializer::class.java
+        config[ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG] = JsonSerializer::class.java
+
+        return DefaultKafkaProducerFactory(config)
     }
 
     @Bean

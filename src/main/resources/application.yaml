@@ -29,8 +29,8 @@ spring:
     password: admin
     driverClassName: org.postgresql.Driver
 
-  test:
-    topic: external.in.client-info
+#  test:
+#    topic: external.in.client-info
 
   sql:
     init:

@@ -3,17 +3,20 @@ package ru.jiminator.mqrestclientregistr
 
 import io.restassured.RestAssured
 import org.apache.kafka.clients.consumer.ConsumerRecord
+import org.apache.kafka.clients.producer.ProducerConfig
 import org.hamcrest.CoreMatchers.`is`
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.kafka.annotation.KafkaListener
+import org.springframework.kafka.test.utils.KafkaTestUtils
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlConfig
 import org.springframework.test.context.jdbc.SqlGroup
 import ru.jiminator.mqrestclientregistr.kafka.KafkaProducerConfig
+import javax.swing.UIManager.put
 import kotlin.time.measureTimedValue
 
 
