@@ -33,6 +33,7 @@ dependencies {
 	implementation("org.hibernate:hibernate-core:5.4.31.Final") //:5.2.15.Final
 	implementation("javax.xml.bind:jaxb-api") //:2.3.0
 	implementation("com.github.docker-java:docker-java-transport-zerodep:3.2.8")
+	compileOnly("org.springframework.boot:spring-boot-starter-webflux")
 	runtimeOnly("org.postgresql:postgresql")
 	testImplementation("io.rest-assured:rest-assured:4.4.0")
 	testImplementation("io.rest-assured:json-schema-validator:4.1.2")
