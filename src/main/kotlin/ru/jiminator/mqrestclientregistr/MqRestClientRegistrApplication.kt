@@ -7,31 +7,31 @@ import mu.KotlinLogging
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.data.repository.CrudRepository
 import org.springframework.kafka.annotation.KafkaListener
-import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component
-import org.springframework.stereotype.Service
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.stereotype.Controller
 import org.springframework.web.servlet.function.RouterFunction
-import org.springframework.web.servlet.function.RouterFunctions.route
 import org.springframework.web.servlet.function.ServerResponse
-import org.springframework.web.servlet.function.ServerResponse.*
-import org.springframework.web.servlet.function.router
+import org.springframework.web.servlet.function.ServerRequest
+import org.springframework.web.servlet.function.RouterFunctions.route
+import org.springframework.web.servlet.function.ServerResponse.ok
 import ru.jiminator.mqrestclientregistr.kafka.KafkaProducerConfig
-import java.util.*
-import javax.persistence.*
+import javax.persistence.Entity
+import javax.persistence.GeneratedValue
+import javax.persistence.GenerationType
+import javax.persistence.Id
 
-
+@Configuration
 @SpringBootApplication
 class MqRestClientRegistrApplication
 
-fun main(args: Array<String>) {
-    runApplication<MqRestClientRegistrApplication>(*args)
-}
+
+    fun main(args: Array<String>) {
+        runApplication<MqRestClientRegistrApplication>(*args)
+    }
+
 
 interface ClientRepository : CrudRepository<Client, Long>
 
@@ -40,7 +40,7 @@ class Client(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Long? = null,
     val factAddress: String,
     val regAddress: String,
-    val phone: Long
+    val phone: Long,
 ) {
 
     companion object {
@@ -54,37 +54,46 @@ class Client(
     override fun hashCode() = kotlinHashCode(properties = properties)
 }
 
-//@Service
-//class ClientService(private val clients: ClientRepository) {
-//
-//    fun all(): List<Client> {
-//        return clients.findAll().toList()
-//    }
-//
-//    fun byId(id: Long): Client? {
-//        return clients.findById(id).orElse(null)
-//    }
-//}
+@Controller
+class ClientHandler(private val repository: ClientRepository) {
 
-//@Bean
-//fun routes(clients: ClientService): RouterFunction<ServerResponse> {
-//    return route()
-//        .GET("/client", serverRequest -> ServerResponse.ok().body(clients.all()))
-//}
+    fun hello(request: ServerRequest): ServerResponse {
+        return ok().body("Hello")
+    }
 
+    fun allClients(request: ServerRequest): ServerResponse {
+        return ok().body(repository.findAll().toList())
+    }
 
-//internal fun buildLegacyApiRoutes(restApiHandler: RestApiHandler) = router {
-//    "/".nest {
-//        GET("/client/{id}") { request ->
-//            val id = runCatching { request.pathVariable("id") }
-//            if (id.isSuccess) {
-//                restApiHandler.Clients(id.getOrThrow())
-//            } else {
-//                ServerResponse.badRequest().body(id.exceptionOrNull()?.message.orEmpty())
-//            }
-//        }
-//    }
-//}
+    fun clientById(request: ServerRequest): ServerResponse {
+        val id = request.param("id").get().toLong()
+
+        return ok().body(repository.findById(id))
+    }
+
+    fun postClient(request: ServerRequest): ServerResponse {
+
+        val fAddress = request.param("fAddress").get()
+        val rAddress = request.param("rAddress").get()
+        val phone = request.param("phone").get().toLong()
+
+        val producer = KafkaProducerConfig().kafkaTemplate()
+        val client = Client(factAddress = fAddress, regAddress = rAddress, phone = phone)
+        val clientTopic = "external.in.client-info"
+
+        producer.send(clientTopic, client).completable().join()
+        return ok().body("Post Client Successful!")
+    }
+
+    @Bean
+    fun router(handler: ClientHandler) : RouterFunction<ServerResponse> {
+        return route()
+            .GET("/hello", handler::hello)
+            .GET("/clients", handler::allClients)
+            .GET("/post", handler::postClient)
+            .GET("/id", handler::clientById).build()
+    }
+}
 
 // Получаем с Kafka JSON сообщение.
 @Component
@@ -101,33 +110,4 @@ class ClientConsumer(private val clients: ClientRepository) {
 
 }
 
-// REST API позволяет получить данные по этим объектам.
-@RestController
-class ClientResource(private val clients: ClientRepository) {
 
-    @GetMapping("/client")
-    fun index(): List<Client> {
-        return clients.findAll().toList()
-    }
-
-    @GetMapping("/post")
-    fun post(
-        @RequestParam fAddress: String,
-        @RequestParam rAddress: String,
-        @RequestParam phone: Long,
-        ): List<Client> {
-
-        val producer = KafkaProducerConfig().kafkaTemplate()
-        val client = Client(factAddress = fAddress, regAddress = rAddress, phone = phone)
-        val clientTopic = "external.in.client-info"
-        producer.send(clientTopic, client).completable().join()
-
-        return clients.findAll().toList()
-    }
-
-    @GetMapping("/client/{id}")
-    fun findClientById(@PathVariable id: Long): Client? {
-        return clients.findById(id).orElse(null)
-
-    }
-}
