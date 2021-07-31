@@ -1,20 +1,18 @@
 package ru.jiminator.mqrestclientregistr
 
 import io.restassured.RestAssured.get
-import io.restassured.RestAssured.given
 import io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath
 import org.hamcrest.CoreMatchers.`is`
-import org.hamcrest.CoreMatchers.hasItem
 import org.junit.jupiter.api.Test
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlConfig
 import org.springframework.test.context.jdbc.SqlGroup
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.get
 
-@SpringBootTest(classes = [MqRestClientRegistrApplication::class])
+
+@SpringBootTest(classes = [MqRestClientRegistrApplication::class], webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @SqlGroup(
     Sql(
         "/import-clients.sql",
@@ -29,16 +27,18 @@ import org.springframework.test.web.servlet.get
 class WebMvcClientResourcesTest {
 
     @Test
-    fun `01 - Test index route of client resource`() {
-        get("/client")
+    fun `01 - Test index route of client resource`(@Autowired restTemplate: TestRestTemplate) {
+        val url = restTemplate.rootUri
+        get("$url/clients")
             .then().assertThat()
             .statusCode(200)
             .body(matchesJsonSchemaInClasspath("getSchema.json"))
     }
 
     @Test
-    fun `02 - Test find route of client resource by id`() {
-        get("/client/2")
+    fun `02 - Test find route of client resource by id`(@Autowired restTemplate: TestRestTemplate) {
+        val url = restTemplate.rootUri
+        get("$url/client/2")
             .then().assertThat()
             .statusCode(200)
             .body(matchesJsonSchemaInClasspath("getSchema1.json"))
