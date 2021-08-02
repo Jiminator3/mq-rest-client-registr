@@ -66,49 +66,52 @@ class ClientHandler(private val repository: ClientRepository) {
     }
 
     fun clientById(request: ServerRequest): ServerResponse {
-        val id = request.param("id").get().toLong()
-        return if (repository.findById(id).isPresent) {
+        return try {
+            val id = request.param("id").get().toLong()
             ok().body(repository.findById(id))
-        } else {
-            ServerResponse.notFound().build()
+        } catch (e: NumberFormatException) {
+            ServerResponse.badRequest().body("Client not found")
         }
     }
 
     fun postClient(request: ServerRequest): ServerResponse {
+        return try {
+            val fAddress = request.param("fAddress").get()
+            val rAddress = request.param("rAddress").get()
+            val phone = request.param("phone").get().toLong()
+            val producer = KafkaProducerConfig().kafkaTemplate()
+            val client = Client(factAddress = fAddress, regAddress = rAddress, phone = phone)
+            val clientTopic = "external.in.client-info"
 
-        val fAddress = request.param("fAddress").get()
-        val rAddress = request.param("rAddress").get()
-        val phone = request.param("phone").get().toLong()
-
-        val producer = KafkaProducerConfig().kafkaTemplate()
-        val client = Client(factAddress = fAddress, regAddress = rAddress, phone = phone)
-        val clientTopic = "external.in.client-info"
-
-        producer.send(clientTopic, client).completable().join()
-        return ok().body("Post Client Successful!")
+            producer.send(clientTopic, client).completable().join()
+            ok().body("Post Client Successful!")
+        } catch (e: NumberFormatException) {
+            ServerResponse.badRequest().body("Client not create")
+        }
     }
+
 
     @Bean
     fun router(handler: ClientHandler): RouterFunction<ServerResponse> {
         return route()
             .GET("/hello", handler::hello)
             .GET("/clients", handler::allClients)
-            .GET("/post", handler::postClient)
-            .GET("/client", handler::clientById).build()
+            .GET("/client", handler::clientById)
+            .GET("/post", handler::postClient).build()
     }
 }
 
-// Получаем с Kafka JSON сообщение.
-@Component
-class ClientConsumer(private val repository: ClientRepository) {
+    // Получаем с Kafka JSON сообщение.
+    @Component
+    class ClientConsumer(private val repository: ClientRepository) {
 
-    private val logger = KotlinLogging.logger {}
+        private val logger = KotlinLogging.logger {}
 
-    @KafkaListener(topics = ["external.in.client-info"])
-    fun clientSave(message: Client) {
-        logger.info { "Get message: $message" }
-        // Сохраняем в БД.
-        repository.save(message)
+        @KafkaListener(topics = ["external.in.client-info"])
+        fun clientSave(message: Client) {
+            logger.info { "Get message: $message" }
+            // Сохраняем в БД.
+            repository.save(message)
+        }
+
     }
-
-}
