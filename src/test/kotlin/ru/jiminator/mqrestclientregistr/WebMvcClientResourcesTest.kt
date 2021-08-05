@@ -4,6 +4,7 @@ import io.restassured.RestAssured.get
 import io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath
 import org.hamcrest.CoreMatchers.`is`
 import org.hamcrest.CoreMatchers.containsString
+import org.junit.Assert
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -26,6 +27,9 @@ import org.springframework.test.context.jdbc.SqlGroup
     )
 )
 class WebMvcClientResourcesTest {
+
+    @Autowired
+    lateinit var repository: ClientRepository
 
     @Test
     fun `01 - Test index route of client resource`(@Autowired restTemplate: TestRestTemplate) {
@@ -72,5 +76,13 @@ class WebMvcClientResourcesTest {
         get("$url/post?fAddress=123&rAddress=123&phone=qweasd")
             .then().assertThat()
             .statusCode(400)
+    }
+
+    @Test
+    fun `06 - Test add client to repository`(@Autowired restTemplate: TestRestTemplate) {
+        val client = repository.findById(1).get()
+        Assert.assertEquals(client.factAddress, "5mkr")
+        Assert.assertEquals(client.regAddress, "6mkr")
+        Assert.assertEquals(client.phone, 89889778864)
     }
 }

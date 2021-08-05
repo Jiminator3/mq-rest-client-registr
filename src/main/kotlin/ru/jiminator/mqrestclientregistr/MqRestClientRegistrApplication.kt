@@ -84,12 +84,15 @@ class ClientHandler(private val repository: ClientRepository) {
             val clientTopic = "external.in.client-info"
 
             producer.send(clientTopic, client).completable().join()
-            ok().body("Post Client Successful!")
+            when (producer.send(clientTopic,client).completable().isCancelled) {
+                true -> ServerResponse.noContent().build()
+                false -> ok().body("Post Client Successful!")
+            }
+
         } catch (e: NumberFormatException) {
             ServerResponse.badRequest().body("Client not create")
         }
     }
-
 
     @Bean
     fun router(handler: ClientHandler): RouterFunction<ServerResponse> {
@@ -101,17 +104,17 @@ class ClientHandler(private val repository: ClientRepository) {
     }
 }
 
-    // Получаем с Kafka JSON сообщение.
-    @Component
-    class ClientConsumer(private val repository: ClientRepository) {
+// Получаем с Kafka JSON сообщение.
+@Component
+class ClientConsumer(private val repository: ClientRepository) {
 
-        private val logger = KotlinLogging.logger {}
+    private val logger = KotlinLogging.logger {}
 
-        @KafkaListener(topics = ["external.in.client-info"])
-        fun clientSave(message: Client) {
-            logger.info { "Get message: $message" }
-            // Сохраняем в БД.
-            repository.save(message)
-        }
-
+    @KafkaListener(topics = ["external.in.client-info"])
+    fun clientSave(message: Client) {
+        logger.info { "Get message: $message" }
+        // Сохраняем в БД.
+        repository.save(message)
     }
+
+}
