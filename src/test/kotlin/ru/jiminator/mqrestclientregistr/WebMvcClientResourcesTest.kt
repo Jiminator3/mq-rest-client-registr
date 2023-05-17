@@ -1,20 +1,20 @@
 package ru.jiminator.mqrestclientregistr
 
 import io.restassured.RestAssured.get
-import io.restassured.RestAssured.given
 import io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath
 import org.hamcrest.CoreMatchers.`is`
-import org.hamcrest.CoreMatchers.hasItem
+import org.hamcrest.CoreMatchers.containsString
+import org.junit.Assert
 import org.junit.jupiter.api.Test
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlConfig
 import org.springframework.test.context.jdbc.SqlGroup
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.get
 
-@SpringBootTest(classes = [MqRestClientRegistrApplication::class])
+
+@SpringBootTest(classes = [MqRestClientRegistrApplication::class], webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @SqlGroup(
     Sql(
         "/import-clients.sql",
@@ -28,17 +28,22 @@ import org.springframework.test.web.servlet.get
 )
 class WebMvcClientResourcesTest {
 
+    @Autowired
+    lateinit var repository: ClientRepository
+
     @Test
-    fun `01 - Test index route of client resource`() {
-        get("/client")
+    fun `01 - Test index route of client resource`(@Autowired restTemplate: TestRestTemplate) {
+        val url = restTemplate.rootUri
+        get("$url/clients")
             .then().assertThat()
             .statusCode(200)
             .body(matchesJsonSchemaInClasspath("getSchema.json"))
     }
 
     @Test
-    fun `02 - Test find route of client resource by id`() {
-        get("/client/2")
+    fun `02 - Test find client resource by id`(@Autowired restTemplate: TestRestTemplate) {
+        val url = restTemplate.rootUri
+        get("$url/client?id=2")
             .then().assertThat()
             .statusCode(200)
             .body(matchesJsonSchemaInClasspath("getSchema1.json"))
@@ -46,5 +51,38 @@ class WebMvcClientResourcesTest {
             .body("factAddress", `is` ("45mkr"))
             .body("regAddress", `is` ("44mkr"))
             .body("phone", `is` (89889778865))
+    }
+
+    @Test
+    fun `03 - Test incorrect response findById`(@Autowired restTemplate: TestRestTemplate) {
+        val url = restTemplate.rootUri
+        get("$url/client?id=asd")
+            .then().assertThat()
+            .statusCode(400)
+    }
+
+    @Test
+    fun `04 - Test post client`(@Autowired restTemplate: TestRestTemplate) {
+        val url = restTemplate.rootUri
+        get("$url/post?fAddress=asd&rAddress=dsa&phone=989")
+            .then().assertThat()
+            .body(containsString("Post Client Successful"))
+            .statusCode(200)
+    }
+
+    @Test
+    fun `05 - Test incorrect post client`(@Autowired restTemplate: TestRestTemplate) {
+        val url = restTemplate.rootUri
+        get("$url/post?fAddress=123&rAddress=123&phone=qweasd")
+            .then().assertThat()
+            .statusCode(400)
+    }
+
+    @Test
+    fun `06 - Test add client to repository`(@Autowired restTemplate: TestRestTemplate) {
+        val client = repository.findById(1).get()
+        Assert.assertEquals(client.factAddress, "5mkr")
+        Assert.assertEquals(client.regAddress, "6mkr")
+        Assert.assertEquals(client.phone, 89889778864)
     }
 }

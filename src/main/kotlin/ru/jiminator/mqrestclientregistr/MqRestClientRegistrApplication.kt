@@ -13,9 +13,9 @@ import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Controller
 import org.springframework.web.servlet.function.RouterFunction
-import org.springframework.web.servlet.function.ServerResponse
-import org.springframework.web.servlet.function.ServerRequest
 import org.springframework.web.servlet.function.RouterFunctions.route
+import org.springframework.web.servlet.function.ServerRequest
+import org.springframework.web.servlet.function.ServerResponse
 import org.springframework.web.servlet.function.ServerResponse.ok
 import ru.jiminator.mqrestclientregistr.kafka.KafkaProducerConfig
 import javax.persistence.Entity
@@ -28,9 +28,9 @@ import javax.persistence.Id
 class MqRestClientRegistrApplication
 
 
-    fun main(args: Array<String>) {
-        runApplication<MqRestClientRegistrApplication>(*args)
-    }
+fun main(args: Array<String>) {
+    runApplication<MqRestClientRegistrApplication>(*args)
+}
 
 
 interface ClientRepository : CrudRepository<Client, Long>
@@ -66,38 +66,47 @@ class ClientHandler(private val repository: ClientRepository) {
     }
 
     fun clientById(request: ServerRequest): ServerResponse {
-        val id = request.param("id").get().toLong()
-
-        return ok().body(repository.findById(id))
+        return try {
+            val id = request.param("id").get().toLong()
+            ok().body(repository.findById(id))
+        } catch (e: NumberFormatException) {
+            ServerResponse.badRequest().body("Client not found")
+        }
     }
 
     fun postClient(request: ServerRequest): ServerResponse {
+        return try {
+            val fAddress = request.param("fAddress").get()
+            val rAddress = request.param("rAddress").get()
+            val phone = request.param("phone").get().toLong()
+            val producer = KafkaProducerConfig().kafkaTemplate()
+            val client = Client(factAddress = fAddress, regAddress = rAddress, phone = phone)
+            val clientTopic = "external.in.client-info"
 
-        val fAddress = request.param("fAddress").get()
-        val rAddress = request.param("rAddress").get()
-        val phone = request.param("phone").get().toLong()
+            producer.send(clientTopic, client).completable().join()
+            when (producer.send(clientTopic,client).completable().isCancelled) {
+                true -> ServerResponse.noContent().build()
+                false -> ok().body("Post Client Successful!")
+            }
 
-        val producer = KafkaProducerConfig().kafkaTemplate()
-        val client = Client(factAddress = fAddress, regAddress = rAddress, phone = phone)
-        val clientTopic = "external.in.client-info"
-
-        producer.send(clientTopic, client).completable().join()
-        return ok().body("Post Client Successful!")
+        } catch (e: NumberFormatException) {
+            ServerResponse.badRequest().body("Client not create")
+        }
     }
 
     @Bean
-    fun router(handler: ClientHandler) : RouterFunction<ServerResponse> {
+    fun router(handler: ClientHandler): RouterFunction<ServerResponse> {
         return route()
             .GET("/hello", handler::hello)
             .GET("/clients", handler::allClients)
-            .GET("/post", handler::postClient)
-            .GET("/id", handler::clientById).build()
+            .GET("/client", handler::clientById)
+            .GET("/post", handler::postClient).build()
     }
 }
 
 // Получаем с Kafka JSON сообщение.
 @Component
-class ClientConsumer(private val clients: ClientRepository) {
+class ClientConsumer(private val repository: ClientRepository) {
 
     private val logger = KotlinLogging.logger {}
 
@@ -105,9 +114,7 @@ class ClientConsumer(private val clients: ClientRepository) {
     fun clientSave(message: Client) {
         logger.info { "Get message: $message" }
         // Сохраняем в БД.
-        clients.save(message)
+        repository.save(message)
     }
 
 }
-
-

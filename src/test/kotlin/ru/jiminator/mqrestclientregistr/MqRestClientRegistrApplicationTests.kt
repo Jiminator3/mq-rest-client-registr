@@ -1,26 +1,23 @@
 package ru.jiminator.mqrestclientregistr
 
 
-import io.restassured.RestAssured
-import org.apache.kafka.clients.consumer.ConsumerRecord
-import org.apache.kafka.clients.producer.ProducerConfig
-import org.hamcrest.CoreMatchers.`is`
+import io.restassured.RestAssured.get
+import org.junit.AfterClass
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.kafka.annotation.KafkaListener
-import org.springframework.kafka.test.utils.KafkaTestUtils
+import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlConfig
 import org.springframework.test.context.jdbc.SqlGroup
 import ru.jiminator.mqrestclientregistr.kafka.KafkaProducerConfig
-import javax.swing.UIManager.put
-import kotlin.time.measureTimedValue
 
 
-@SpringBootTest(classes = [MqRestClientRegistrApplication::class])
+@SpringBootTest(
+    classes = [MqRestClientRegistrApplication::class],
+    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
+)
 @SqlGroup(
     Sql(
         "/delete-import-clients.sql",
@@ -29,32 +26,55 @@ import kotlin.time.measureTimedValue
     )
 )
 @DirtiesContext
-class KafkaClientMessageTest {
+class KafkaClientMessageTest(@Autowired val restTemplate: TestRestTemplate) {
 
-    val consume: ConsumerRecord<String, Client>? = null
-
-//    @Value("{external.in.client-info}")
+    // @Value("external.in.client-info")
     private val clientTopic = "external.in.client-info"
 
-    @KafkaListener(topics = ["external.in.client-info"])
-    @Test
-    fun `01 - Test client from message queue and store in database`() {
-//        val producerProps = KafkaTestUtils.producerProps(embeddedKafkaBroker!!.first()).apply {
-//            put(
-//                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-//                "org.springframework.kafka.support.serializer.JsonSerializer"
-//            )
-//        }
-        val producer = KafkaProducerConfig().kafkaTemplate()
-        val client = Client(10,"5 mkr","6mkr",89889778864)
-        producer.send(clientTopic, client).completable().join()
-        RestAssured.get("/client").then()
-            .statusCode(200)
-//        println(consume!!.value())
-//        val body = record.value()
-//        rep.save(record.value())
-//        producer.execute(KafkaOperations.ProducerCallback { Client.Companion.equals(1) })
-//        RestAssured.get("/client").then()
-//            .body("factAddress", `is`("5 mkr")).body("regAddress", `is`("6mkr")).body("phone", `is`(89889778864))
-    }
+//    @AfterClass
+//    @Test
+//    fun `01 - Test post client in to the repository`() {
+//        val url = restTemplate.rootUri
+//        get("$url/post?fAddress=3mkr&rAddress=3mkr&phone=955543")
+//            .then().assertThat()
+//            .statusCode(200)
+//    }
+
+    //@KafkaListener(topics = ["external.in.client-info"])
+//    @Test
+//    fun `02 - Test client from message queue and store in database`() {
+
+//        val url = restTemplate.rootUri
+//        val producer = KafkaProducerConfig().kafkaTemplate()
+//        val client = Client(id = 100500, factAddress = "3mkr", regAddress = "3mkr", phone = 955543)
+//        producer.send(clientTopic, client).completable().join()
+//        producer.flush()
+//        get("$url/client/1")
+//            .then().assertThat()
+//            .statusCode(200)
+//            .body("id", `is`(1))
+//            .body("phone", `is`(955543))
+//        get("$url/client/1").then().assertThat().statusCode(200)
+//            .contentType(ContentType.JSON)
+//            .body("id", `is`(1))
+//            .body("factAddress", `is`("3mkr"))
+//            .body("regAddress", `is`("3mkr"))
+//            .body("phone", `is`(955543))
+//        producer.send(clientTopic, client).completable().join()
+//        assert(producer.send(clientTopic, client).completable().isDone)
+//        val res = RestAssured.registerParser("text/plain", Parser.TEXT)
+//    }
+
+//    @Order(1)
+//    @KafkaListener(topics = ["external.in.client-info"])
+//    fun kafkaSaveMessage(repository: ClientRepository, message: Client) {
+//        repository.save(message)
+//    }
+//
+//    @Order(0)
+//    fun kafkaProduce() {
+//        val producer = KafkaProducerConfig().kafkaTemplate()
+//        val client = Client(factAddress = "5 mkr", regAddress = "6mkr", phone = 89889778864)
+//        producer.send(clientTopic, client).completable().join()
+//    }
 }
